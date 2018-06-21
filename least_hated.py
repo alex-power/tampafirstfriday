@@ -1,8 +1,61 @@
-import Voter
-import Option
-import Factory
 import collections
+import os
+import sys
 
+class Voter:
+	def __init__(self, id, votes, name):
+		self.id = id
+		self.votes = votes
+		self.name = name
+
+class Option:	
+	def __init__ (self, id, name):
+		self.id = id
+		self.name = name
+
+def CreateVoters(path):
+	voteFile = open(path, 'r')
+	voters = []
+	currentUserId = 0
+
+	line = voteFile.readline()
+	while line:
+		splitVotes = line.split(',')
+		name = splitVotes[0]
+		splitVotes = splitVotes[1:]
+
+		splitVotes[len(splitVotes) - 1] = splitVotes[len(splitVotes) - 1].strip('\n')
+
+		votes = [int(vote) for vote in splitVotes]
+		currentUserId += 1
+		voters.append(Voter(currentUserId, votes, name))
+		
+		line = voteFile.readline()
+
+	voteFile.close()
+	for voter in voters:
+		print("{}: {}".format(voter.name, voter.votes))
+
+	return voters
+
+
+def CreateOptions(path):
+	optionFile = open(path, 'r')
+	options = []
+	currentOptionId = 0
+	
+	line = optionFile.readline()
+	while line:
+		print(line)
+		currentOptionId += 1
+		options.append(Option(currentOptionId, line))
+		
+
+		line = optionFile.readline()
+
+	optionFile.close()
+
+	return options
 
 def determineLeastHatedFirstFridayOption(options, voters):	
 	return options[determineLeastHatedFirstFridayOptionNumber(options, voters) - 1]
@@ -42,8 +95,10 @@ def printStateOfVoterVotes(voters):
 	for voter in voters:
 	 print ('User {0}: {1} '.format(voter.id, voter.votes))
 
-options = Factory.CreateOptions("C:/Users/apower/Documents/firstfriday/ffOptionsInput.txt")
-voters = Factory.CreateVoters("C:/Users/apower/Documents/firstfriday/input.txt")
+if (len(sys.argv) != 3):
+	print("ERROR: Must provide Options and Input. python least_hated.py <path-to-options> <path-to-input>")
+options = CreateOptions(sys.argv[1])
+voters = CreateVoters(sys.argv[2])
 
 winner = determineLeastHatedFirstFridayOption(options, voters)
 
