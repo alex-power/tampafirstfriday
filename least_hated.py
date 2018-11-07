@@ -34,8 +34,8 @@ def CreateVoters(path):
 
 	voteFile.close()
 	for voter in voters:
-		print("{}: {}".format(voter.name, voter.votes))
-
+		log("{}: {}".format(voter.name, voter.votes))
+	log("")
 	return voters
 
 
@@ -46,7 +46,8 @@ def CreateOptions(path):
 	
 	line = optionFile.readline()
 	while line:
-		print(line)
+		line = line.strip('\n')
+		log(line)
 		currentOptionId += 1
 		options.append(Option(currentOptionId, line))
 		
@@ -54,11 +55,15 @@ def CreateOptions(path):
 		line = optionFile.readline()
 
 	optionFile.close()
-
+	log("")
 	return options
 
 def determineLeastHatedFirstFridayOption(options, voters):	
-	return options[determineLeastHatedFirstFridayOptionNumber(options, voters) - 1]
+	opt = determineLeastHatedFirstFridayOptionNumber(options, voters)
+	if opt != None:
+		return options[opt - 1]
+	else:
+		return None
 
 def determineLeastHatedFirstFridayOptionNumber(options, voters):
 	numOptions = len(options)
@@ -68,38 +73,69 @@ def determineLeastHatedFirstFridayOptionNumber(options, voters):
 		if(i < len(voters[0].votes)):
 			processRowOfVotes(options, voters, i)		
 
-	return returnMostCommonElementInLastRow(voters)
+	if len(voters[0].votes) != 0:
+		return returnMostCommonElementInLastRow(voters)
+	else:
+		return None
+
 
 
 def processRowOfVotes(options, voters, i):
 	row = [voter.votes[i] for voter in voters]
-	print ('Process vote row {0}'.format(row))
+	log ('Process vote row {0}'.format(row))
 	voteCounter = collections.Counter(row)
 	mostCommon = voteCounter.most_common()
 	maxVoted = mostCommon[0][1]		
 	mostHateds = [x for x, y in mostCommon if y == maxVoted]
-	print('Most hated option(s) are {0}'.format([option.name for option in options if option.id in mostHateds]))
+	log('Most hated option(s) are {0}'.format([option.name for option in options if option.id in mostHateds]))
 	voters = removeMostHatedFromVotes(voters, mostHateds)
-	printStateOfVoterVotes(voters)
+	if len(voters[0].votes) != 0:
+		printStateOfVoterVotes(voters)
 
 def removeMostHatedFromVotes(voters, mostHateds):
 	for mostHated in mostHateds:
 		for voter in voters:
 			voter.votes.remove(mostHated)
+	if len(voters[0].votes) == 0:
+		enterSuddenDeath(voters, mostHateds)
 	return voters
+
+def enterSuddenDeath(voters, mostHateds):
+	log("There has been a tie! Entering sudden death! The contestants are:")
+	index = 1
+	for contestant in mostHateds:
+		log("{}: {}".format(index, options[contestant - 1].name))
+		index += 1
+	log("Please re-vote on these {} contestants!\n".format(len(mostHateds)))
 
 def returnMostCommonElementInLastRow(voters):
 	return collections.Counter([voter.votes[0] for voter in voters]).most_common()[0][0]
 
 def printStateOfVoterVotes(voters):
 	for voter in voters:
-	 print ('User {0}: {1} '.format(voter.id, voter.votes))
+	 log ('{0}: {1} '.format(voter.name, voter.votes))
 
-if (len(sys.argv) != 3):
-	print("ERROR: Must provide Options and Input. python least_hated.py <path-to-options> <path-to-input>")
-options = CreateOptions(sys.argv[1])
-voters = CreateVoters(sys.argv[2])
+def run(optionsFile, inputFile):
+	global outputText
+	options = CreateOptions(optionsFile)
+	voters = CreateVoters(inputFile)
+	winner = determineLeastHatedFirstFridayOption(options, voters)
+	if winner is not None:
+		log('And the winner is...{0}'.format(winner.name))
+	out = outputText
+	outputText = ""
+	return out
 
-winner = determineLeastHatedFirstFridayOption(options, voters)
+def log(msg):
+	global outputText
+	print(msg)
+	outputText += msg + '\n'
 
-print ('And the winner is...{0}'.format( winner.name))
+outputText = ""
+if __name__ == '__main__':	
+	if (len(sys.argv) != 3):
+		print("ERROR: Must provide Options and Input. python least_hated.py <path-to-options> <path-to-input>")
+	optionsFile = sys.argv[1]
+	inputFile = sys.argv[2]
+	run(optionsFile, inputFile)
+
